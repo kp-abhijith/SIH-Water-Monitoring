@@ -1,0 +1,451 @@
+
+
+Index · HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jal-Sathi | Smart Water Monitoring</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet.js CSS & JS for Multi-Node GIS Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans antialiased flex">
+ 
+    <!-- ================= LEFT SIDEBAR NAVIGATION ================= -->
+    <aside class="w-64 bg-white border-r border-sky-100 flex flex-col justify-between h-screen sticky top-0 p-4 z-30 shadow-sm">
+        <div class="space-y-6">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-3 px-2 py-1">
+                <div class="bg-sky-500 text-white p-2.5 rounded-xl shadow-md shadow-sky-500/20">
+                    <i class="fa-solid fa-droplet text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold tracking-tight text-slate-900 flex items-center gap-1.5">
+                        Jal-Sathi <span class="text-[9px] bg-sky-100 text-sky-700 font-bold px-1.5 py-0.5 rounded border border-sky-200">SIH 26040</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400">Jharkhand Water Hub</p>
+                </div>
+            </div>
+ 
+            <!-- Navigation Links -->
+            <nav class="space-y-1.5">
+                <p class="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Main Menu</p>
+                
+                <button id="nav-dashboard" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-sky-500 text-white shadow-md shadow-sky-500/20 transition-all">
+                    <i class="fa-solid fa-gauge text-sm"></i>
+                    <span>Realtime Dashboard</span>
+                </button>
+ 
+                <button id="nav-map" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-map-location-dot text-sm"></i>
+                    <span>Jharkhand Node Map</span>
+                </button>
+ 
+                <button id="nav-reports" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-chart-pie text-sm"></i>
+                    <span>Monthly Reports</span>
+                </button>
+ 
+                <button id="nav-thresholds" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-sliders text-sm"></i>
+                    <span>Threshold Limits</span>
+                </button>
+                <button id="nav-history" class="w-full flex items-center gap-3 px-3.5 py-2.5 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100 transition-all">
+                    <i class="fa-solid fa-clock-rotate-left text-sm"></i>
+                    <span>Telemetry History</span>
+                </button>
+            </nav>
+        </div>
+ 
+        <!-- Sidebar User Profile -->
+        <div class="pt-4 border-t border-slate-100 space-y-3">
+            <div class="flex items-center justify-between px-2">
+                <div>
+                    <p class="text-xs font-bold text-slate-800" id="user-display">Operator</p>
+                    <p class="text-[10px] text-slate-400" id="role-display">System Administrator</p>
+                </div>
+                <button id="logout-btn" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Logout">
+                    <i class="fa-solid fa-right-from-bracket text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </aside>
+ 
+    <!-- ================= MAIN CONTENT AREA ================= -->
+    <div class="flex-1 flex flex-col min-w-0">
+ 
+        <!-- Header -->
+        <header class="bg-white border-b border-sky-100 px-8 py-4 flex justify-between items-center sticky top-0 z-20 shadow-sm">
+            <div>
+                <h2 class="text-sm font-bold text-slate-800">Station Node: <span class="text-sky-600">ESP32_JH01</span></h2>
+                <p class="text-[11px] text-slate-400">Dhanbad Mining Area Filtration Unit</p>
+            </div>
+ 
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-xs text-slate-500 font-semibold">Station:</label>
+                    <select id="dashboard-station-select" class="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="">Latest from any station</option>
+                    </select>
+                </div>
+                <span id="connection-badge" class="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-semibold rounded-full border border-emerald-200">
+                    <span class="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></span> Active
+                </span>
+                <span class="text-xs text-slate-400">Last Sync: <strong id="last-sync" class="text-slate-700">Syncing...</strong></span>
+            </div>
+        </header>
+ 
+        <main class="p-8 space-y-6 flex-1 overflow-y-auto">
+ 
+            <!-- ALARM BANNER -->
+            <div id="alarm-banner" class="hidden bg-red-50 border border-red-200 text-red-900 p-4 rounded-2xl flex items-center gap-4 shadow-sm animate-pulse">
+                <div class="bg-red-500 text-white p-3 rounded-xl shadow-md shadow-red-500/20">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h3 class="font-bold text-sm text-red-900">CRITICAL PARAMETER EXCEEDED</h3>
+                    <p class="text-xs text-red-700">Water quality parameters breach your configured threshold limits. Emergency valve action triggered.</p>
+                </div>
+                <button onclick="dismissAlarm()" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-all shadow-sm">
+                    Acknowledge
+                </button>
+            </div>
+ 
+            <!-- ================= VIEW 1: REALTIME DASHBOARD ================= -->
+            <div id="view-dashboard" class="space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Raw Water Chamber -->
+                    <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-amber-400"></div>
+                        <div class="flex justify-between items-center mb-5">
+                            <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-flask-vial text-amber-500"></i> Raw Water Inlet
+                            </h2>
+                            <span class="text-xs bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-200 font-medium">Pre-Treatment</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
+                                <p class="text-[11px] text-slate-500 uppercase font-semibold mb-1">pH Level</p>
+                                <p id="raw-ph" class="text-2xl font-extrabold text-slate-800">--</p>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
+                                <p class="text-[11px] text-slate-500 uppercase font-semibold mb-1">TDS Level</p>
+                                <p id="raw-tds" class="text-2xl font-extrabold text-slate-800">-- <span class="text-xs font-normal text-slate-500">ppm</span></p>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-100 p-4 rounded-xl text-center">
+                                <p class="text-[11px] text-slate-500 uppercase font-semibold mb-1">Turbidity</p>
+                                <p id="raw-turb" class="text-2xl font-extrabold text-slate-800">-- <span class="text-xs font-normal text-slate-500">NTU</span></p>
+                            </div>
+                        </div>
+                    </div>
+ 
+                    <!-- Treated Water Outlet -->
+                    <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1.5 h-full bg-sky-500"></div>
+                        <div class="flex justify-between items-center mb-5">
+                            <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-circle-check text-sky-500"></i> Treated Drinking Outlet
+                            </h2>
+                            <span id="treatment-status" class="text-xs bg-sky-50 text-sky-700 px-2.5 py-1 rounded-full border border-sky-200 font-medium">Safe</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-sky-50/40 border border-sky-100 p-4 rounded-xl text-center">
+                                <p class="text-[11px] text-sky-700 uppercase font-semibold mb-1">pH Level</p>
+                                <p id="treat-ph" class="text-2xl font-extrabold text-sky-900">--</p>
+                            </div>
+                            <div class="bg-sky-50/40 border border-sky-100 p-4 rounded-xl text-center">
+                                <p class="text-[11px] text-sky-700 uppercase font-semibold mb-1">TDS Level</p>
+                                <p id="treat-tds" class="text-2xl font-extrabold text-sky-900">-- <span class="text-xs font-normal text-sky-600">ppm</span></p>
+                            </div>
+                            <div class="bg-sky-50/40 border border-sky-100 p-4 rounded-xl text-center">
+                                <p class="text-[11px] text-sky-700 uppercase font-semibold mb-1">Turbidity</p>
+                                <p id="treat-turb" class="text-2xl font-extrabold text-sky-900">-- <span class="text-xs font-normal text-sky-600">NTU</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+ 
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm lg:col-span-2">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-sky-500"></i> Telemetry Trends
+                            </h3>
+                            <div class="flex gap-1.5 bg-slate-100 p-1 rounded-lg">
+                                <button onclick="switchMetricView('tds')" class="px-2.5 py-1 bg-white text-sky-700 text-xs font-semibold rounded shadow-sm">TDS</button>
+                                <button onclick="switchMetricView('turb')" class="px-2.5 py-1 text-slate-600 hover:text-slate-900 text-xs font-semibold rounded">Turbidity</button>
+                            </div>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="metricsChart"></canvas>
+                        </div>
+                    </div>
+ 
+                    <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                <i class="fa-solid fa-microchip text-sky-500"></i> Hardware Controls
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-700">Solenoid Boost Pump</p>
+                                        <p class="text-[11px] text-slate-400">12V DC Relay</p>
+                                    </div>
+                                    <span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-[10px] font-bold uppercase rounded-md">ACTIVE</span>
+                                </div>
+                                <div class="flex justify-between items-center bg-slate-50 border border-slate-100 p-3.5 rounded-xl">
+                                    <div>
+                                        <p class="text-xs font-bold text-slate-700">Water Temperature</p>
+                                        <p class="text-[11px] text-slate-400">DS18B20 Probe</p>
+                                    </div>
+                                    <span id="system-temp" class="text-sm font-extrabold text-sky-700">-- °C</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+ 
+            <!-- ================= VIEW 2: MULTI-NODE MAP ================= -->
+            <div id="view-map" class="hidden space-y-6">
+                <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800">Jharkhand Regional Node Map</h2>
+                            <p class="text-xs text-slate-500">Live geographic distribution of water monitoring stations across mining hubs.</p>
+                        </div>
+                        <span class="text-xs bg-sky-50 text-sky-700 px-3 py-1 rounded-full font-semibold border border-sky-200">
+                            3 Nodes Configured
+                        </span>
+                    </div>
+                    <div id="map" class="h-96 w-full rounded-xl border border-slate-200"></div>
+                </div>
+ 
+                <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-map-pin text-sky-500"></i> Add a New Station
+                    </h3>
+                    <form id="add-station-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                        <div>
+                            <label class="block text-[11px] text-slate-500 mb-1">Station Name</label>
+                            <input type="text" id="new-station-name" required placeholder="e.g. Giridih Unit" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-500 mb-1">Device ID</label>
+                            <input type="text" id="new-station-device" required placeholder="e.g. ESP32_JH04" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-500 mb-1">Latitude</label>
+                            <input type="number" step="any" id="new-station-lat" required placeholder="24.1833" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-500 mb-1">Longitude</label>
+                            <input type="number" step="any" id="new-station-lng" required placeholder="86.3000" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="new-station-notes" placeholder="Notes (optional)" class="flex-1 bg-slate-50 border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            <button type="submit" class="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-sky-500/20 whitespace-nowrap">Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+ 
+            <!-- ================= VIEW 3: MONTHLY REPORTS ================= -->
+            <div id="view-reports" class="hidden space-y-6">
+                <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800">Monthly Water Quality Compliance Reports</h2>
+                            <p class="text-xs text-slate-500">Analyze daily average metrics and generate official CSV logs for BIS compliance.</p>
+                        </div>
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <input type="month" id="report-month-picker" class="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2 outline-none">
+                            <button id="btn-fetch-report" class="px-3.5 py-2 bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs rounded-xl transition-all">Fetch</button>
+                            <button id="btn-export-csv" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-csv"></i> Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="h-80">
+                        <canvas id="monthlyReportChart"></canvas>
+                    </div>
+                </div>
+            </div>
+ 
+            <!-- ================= VIEW 4: THRESHOLD CONFIGURATION ================= -->
+            <div id="view-thresholds" class="hidden space-y-6">
+                <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm">
+                    <div class="mb-6">
+                        <h2 class="text-base font-bold text-slate-800">Water Quality Threshold Limits</h2>
+                        <p class="text-xs text-slate-500">Define custom acceptable operating ranges for pH, TDS, Turbidity, and Temperature. Parameter breaches will immediately trigger hardware cutoff & SMS alerts.</p>
+                    </div>
+ 
+                    <form id="threshold-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- pH Limits -->
+                        <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-vial text-sky-500"></i>
+                                <h3 class="text-xs font-bold text-slate-800 uppercase">pH Level</h3>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Min Safe pH</label>
+                                <input type="number" step="0.1" id="min-ph" value="6.5" class="w-full bg-white border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Max Safe pH</label>
+                                <input type="number" step="0.1" id="max-ph" value="8.5" class="w-full bg-white border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                        </div>
+ 
+                        <!-- TDS Limits -->
+                        <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-filter text-sky-500"></i>
+                                <h3 class="text-xs font-bold text-slate-800 uppercase">TDS (ppm)</h3>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Min Safe TDS</label>
+                                <input type="number" id="min-tds" value="50" class="w-full bg-white border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Max Safe TDS</label>
+                                <input type="number" id="max-tds" value="500" class="w-full bg-white border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                        </div>
+ 
+                        <!-- Turbidity Limits -->
+                        <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-water text-sky-500"></i>
+                                <h3 class="text-xs font-bold text-slate-800 uppercase">Turbidity (NTU)</h3>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Min Safe Turbidity</label>
+                                <input type="number" step="0.1" id="min-turb" value="0.0" class="w-full bg-white border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Max Safe Turbidity</label>
+                                <input type="number" step="0.1" id="max-turb" value="5.0" class="w-full bg-white border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                        </div>
+ 
+                        <!-- Temperature Limits -->
+                        <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-temperature-three-quarters text-sky-500"></i>
+                                <h3 class="text-xs font-bold text-slate-800 uppercase">Temp (°C)</h3>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Min Safe Temp</label>
+                                <input type="number" step="0.1" id="min-temp" value="10.0" class="w-full bg-white border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-500 mb-1">Max Safe Temp</label>
+                                <input type="number" step="0.1" id="max-temp" value="38.0" class="w-full bg-white border border-slate-200 text-xs rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-sky-500">
+                            </div>
+                        </div>
+ 
+                        <div class="sm:col-span-2 lg:col-span-4 flex justify-end">
+                            <button type="submit" class="px-6 py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-sky-500/20">
+                                Save Threshold Configurations
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!-- ================= VIEW 5: TELEMETRY HISTORY ================= -->
+            <div id="view-history" class="hidden space-y-6">
+                <div class="bg-white border border-sky-100 rounded-2xl p-6 shadow-sm">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-800">Telemetry Data Log</h2>
+                            <p class="text-xs text-slate-500">Historical records of sensor readings with pagination and filters.</p>
+                        </div>
+                        
+                        <!-- History Filters -->
+                        <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                            <select id="hist-station" class="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500">
+                                <option value="">All Stations</option>
+                                <option value="ESP32_JH01">ESP32_JH01 (Dhanbad)</option>
+                                <option value="ESP32_JH02">ESP32_JH02 (Ranchi)</option>
+                                <option value="ESP32_JH03">ESP32_JH03 (Bokaro)</option>
+                            </select>
+                            <input type="date" id="hist-start" class="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500" title="Start Date">
+                            <input type="date" id="hist-end" class="bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-sky-500" title="End Date">
+                            <button id="btn-fetch-history" class="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-semibold text-xs rounded-xl transition-all shadow-md shadow-sky-500/20">Apply Filters</button>
+                        </div>
+                    </div>
+ 
+                    <!-- Data Table -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-200 mb-4">
+                        <table class="w-full text-left text-xs whitespace-nowrap">
+                            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold">Timestamp</th>
+                                    <th class="px-4 py-3 font-semibold">Station ID</th>
+                                    <th class="px-4 py-3 font-semibold">Raw pH</th>
+                                    <th class="px-4 py-3 font-semibold">Raw TDS</th>
+                                    <th class="px-4 py-3 font-semibold">Raw Turb</th>
+                                    <th class="px-4 py-3 font-semibold">Treat pH</th>
+                                    <th class="px-4 py-3 font-semibold">Treat TDS</th>
+                                    <th class="px-4 py-3 font-semibold">Treat Turb</th>
+                                    <th class="px-4 py-3 font-semibold">Temp °C</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table-body" class="divide-y divide-slate-100 text-slate-700">
+                                <tr><td colspan="9" class="px-4 py-8 text-center text-slate-500">Loading data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+ 
+                    <!-- Pagination Controls -->
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs text-slate-500">Showing page <span id="hist-page-current" class="font-bold text-slate-800">1</span> of <span id="hist-page-total" class="font-bold text-slate-800">1</span></p>
+                        <div class="flex gap-2">
+                            <button id="btn-prev-page" class="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Previous</button>
+                            <button id="btn-next-page" class="px-3 py-1.5 bg-white border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Next</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+ 
+        </main>
+    </div>
+ 
+    <!-- AUTHENTICATION MODAL -->
+    <div id="login-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div class="bg-white border border-sky-100 rounded-2xl p-8 max-w-sm w-full shadow-xl">
+            <div class="text-center mb-6">
+                <div class="h-12 w-12 bg-sky-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md shadow-sky-500/30">
+                    <i class="fa-solid fa-droplet text-2xl"></i>
+                </div>
+                <h2 class="text-xl font-bold text-slate-900">Jal-Sathi Gateway</h2>
+                <p class="text-xs text-slate-500">Enter system credentials to proceed</p>
+            </div>
+            <div id="login-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl text-center"></div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Username</label>
+                    <input type="text" name="username" required placeholder="admin" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+                    <input type="password" name="password" required placeholder="••••••••" class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl p-3 outline-none focus:ring-2 focus:ring-sky-500">
+                </div>
+                <button type="submit" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs py-3 rounded-xl transition-all shadow-md shadow-sky-500/20">
+                    Authenticate Session
+                </button>
+            </form>
+        </div>
+    </div>
+ 
+    <script src="js/app.js"></script>
+</body>
+</html>
+ 

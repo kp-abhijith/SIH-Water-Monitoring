@@ -1,0 +1,5 @@
+Flask
+flask-cors
+Werkzeug
+twilio
+python-dotenv
