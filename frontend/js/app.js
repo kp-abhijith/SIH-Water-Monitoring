@@ -1,5 +1,5 @@
 // ================= CONFIGURATION & GLOBAL STATE =================
-const API_BASE_URL = "http://127.0.0.1:5000/api";
+const API_BASE_URL = window.location.origin + "/api";
 
 const state = {
   currentUser: null,

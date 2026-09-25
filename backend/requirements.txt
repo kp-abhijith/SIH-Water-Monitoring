@@ -3,3 +3,4 @@ flask-cors
 Werkzeug
 twilio
 python-dotenv
+gunicorn

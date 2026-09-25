@@ -3,7 +3,7 @@ import sqlite3
 import csv
 import io
 import time
-from flask import Flask, request, jsonify, session, Response
+from flask import Flask, request, jsonify, session, Response, send_from_directory
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from twilio.rest import Client
@@ -534,5 +534,18 @@ def export_csv():
                      headers={"Content-disposition": f"attachment; filename=JalSathi_Report_{month}.csv"})
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+
+
+@app.route("/")
+def serve_index():
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+@app.route("/js/<path:filename>")
+def serve_js(filename):
+    return send_from_directory(os.path.join(FRONTEND_DIR, "js"), filename)
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
